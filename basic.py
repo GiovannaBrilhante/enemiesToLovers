@@ -1,9 +1,12 @@
 # Import and initialize the pygame library
 import pygame
+#Import random for random numbers
+import random
 
 # Import pygame.locals for easier access to key coordinates
 # Updated to conform to flake8 and black standards
 from pygame.locals import (
+    RLEACCEL,
     K_UP,
     K_DOWN,
     K_LEFT,
@@ -16,15 +19,19 @@ from pygame.locals import (
 # Initialize pygame
 pygame.init()
 
+# Define constants for the screen width and height
+SCREEN_WIDTH = 800
+SCREEN_HEIGHT = 600
 
 # Define a Player object by extending pygame.sprite.Sprite
 # The surface drawn on the screen is now an attribute of 'player'
 class Player(pygame.sprite.Sprite):
     def __init__(self):
         super(Player, self).__init__()
-        self.surf = pygame.Surface((75, 25))
-        self.surf.fill((255, 255, 255))
-        self.rect = self.surf.get_rect()
+        self.surf = pygame.image.load("ini.png") #.convert()
+        self.surf.set_colorkey((255,255,255), RLEACCEL)
+        self.rect = self.surf.get_rect(
+            center = (30,30))
 
 
 
@@ -49,14 +56,80 @@ class Player(pygame.sprite.Sprite):
         if self.rect.bottom >= SCREEN_HEIGHT:
             self.rect.bottom = SCREEN_HEIGHT
 
-player = Player()
-# Define constants for the screen width and height
-SCREEN_WIDTH = 800
-SCREEN_HEIGHT = 600
 
+
+player = Player()
+
+#Define the enemy object by extending pygame.sprite.Sprite
+#The surface you draw on the screen is now an attribute of 'enemy'
+class Enemy(pygame.sprite.Sprite):
+    def __init__(self):
+        super(Enemy, self).__init__()
+        self.surf = pygame.image.load("coracao.png").convert()
+        self.surf.set_colorkey((0,0,0), RLEACCEL)
+        #The starting position is randomly generated, as is the speed
+        self.rect= self.surf.get_rect(
+            center=(
+                random.randint(SCREEN_WIDTH + 20, SCREEN_WIDTH + 100),
+                random.randint(0,SCREEN_HEIGHT),
+            )
+        )
+        self.speed = random.randint(5, 20)
+
+    #Move the sprite based on speed
+    # Remove the sprite when it passes the left edge of the screen
+    def update(self):
+        self.rect.move_ip(-self.speed, 0)
+        if self.rect.right < 0:
+            self.kill()
+
+#Define the cloud object by extending pygame.sprite.Sprite
+#Use an image for a better-looking sprite
+class Cloud(pygame.sprite.Sprite):
+    def __init__(self):
+        super(Cloud, self).__init__()
+        self.surf = pygame.image.load("cloud.png").convert()
+        self.surf.set_colorkey((0,0,0), RLEACCEL)
+        #The starting position is randomly generated, as is the speed
+        self.rect= self.surf.get_rect(
+            center=(
+                random.randint(SCREEN_WIDTH + 20, SCREEN_WIDTH + 100),
+                random.randint(0,SCREEN_HEIGHT),
+            )
+        )
+        self.speed = random.randint(5, 20)
+
+    #Move the cloud based on speed
+    # Remove the cloud when it passes the left edge of the screen
+    def update(self):
+        self.rect.move_ip(-self.speed, 0)
+        if self.rect.right < 0:
+            self.kill()
+
+#Setup for sounds. Defaults are good.
+pygame.mixer.init()
+
+#Initialize pygame
+pygame.init()
+
+#Set up the clock for a decent framerate
+clock = pygame.time.Clock()
 # Create the screen object
 # The size is determined by the constant SCREEN_WIDTH and SCREEN_HEIGHT
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+
+#Create a custom event for adding a new enemy and a cloud 
+ADDENEMY = pygame.USEREVENT + 1
+pygame.time.set_timer(ADDENEMY, 250)
+ADDCLOUD = pygame.USEREVENT + 2
+pygame.time.set_timer(ADDCLOUD, 1000)
+# Create groups to hold enemy sprites and all sprites
+# - enemies is used for collision detection and position updates
+# - all_sprites is used for rendering
+enemies = pygame.sprite.Group()
+clouds = pygame.sprite.Group()
+all_sprites = pygame.sprite.Group()
+all_sprites.add(player)
 
 # Variable to keep the main loop running
 running = True
@@ -75,33 +148,46 @@ while running:
         elif event.type == QUIT:
             running = False
 
-        # Get the set of keys pressed and check for user input
-        pressed_keys = pygame.key.get_pressed()
+        # Add a new enemy ?
+        elif event.type == ADDENEMY:
+            #Create the new enemy and add it to sprite groups
+            new_enemy = Enemy()
+            enemies.add(new_enemy)
+            all_sprites.add(new_enemy)
+
+        #Add a new cloud?
+        elif event.type == ADDCLOUD:
+            #Create the new cloud and add it to sprite groups
+            new_cloud = Cloud()
+            clouds.add(new_cloud)
+            all_sprites.add(new_cloud)
+    # Get the set of keys pressed and check for user input
+    pressed_keys = pygame.key.get_pressed()
 
     #Update the player sprite based on user keypresses
     player.update(pressed_keys)
-    # Fill the background with white
-    screen.fill((0,0,0))
+
+    #Update the position of enemies and clouds
+    enemies.update()
+    clouds.update()
+
+    # Fill the screen with sky blue
+    screen.fill((135,206,250))
     
-    # Draw the player on the screen
-    screen.blit(player.surf, player.rect)  
-    '''
-    # Create a surface and pass in a tuple containing its length and width
-    surf = pygame.Surface((100,50))
+    # Draw all sprites
+    for entity in all_sprites:
+        screen.blit(entity.surf, entity.rect)  
 
-    # Give the surface a color to separate it from the background
-    surf.fill((255,255,255))
-    rect = surf.get_rect()
-
-    # Put the center of surf at the center of the display
-    surf_center = (
-        (SCREEN_WIDTH-surf.get_width())/2,
-        (SCREEN_HEIGHT-surf.get_height())/2
-    )
-    '''
-    # This line says "Draw surf onto the screen at the center"
-    #screen.blit(surf, (SCREEN_WIDTH/2, SCREEN_HEIGHT/2))
+    #check i any enemies have collided with the player
+    if pygame.sprite.spritecollideany(player, enemies):
+        #if so, then remove the player and stop the loop
+        player.kill()
+        running = False
+    #Flip everything to the display
     pygame.display.flip()
+
+#Ensure program maintains a rate of 30 frames per second
+clock.tick(30)
 
 #Done! Time to quit.
 pygame.quit()
