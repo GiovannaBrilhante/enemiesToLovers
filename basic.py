@@ -28,7 +28,7 @@ SCREEN_HEIGHT = 600
 class Player(pygame.sprite.Sprite):
     def __init__(self):
         super(Player, self).__init__()
-        self.surf = pygame.image.load("ini.png") #.convert()
+        self.surf = pygame.image.load("assets/ini.png") #.convert()
         self.surf.set_colorkey((255,255,255), RLEACCEL)
         self.rect = self.surf.get_rect(
             center = (30,30))
@@ -65,7 +65,7 @@ player = Player()
 class Enemy(pygame.sprite.Sprite):
     def __init__(self):
         super(Enemy, self).__init__()
-        self.surf = pygame.image.load("coracao.png").convert()
+        self.surf = pygame.image.load("assets/coracao.png").convert()
         self.surf.set_colorkey((0,0,0), RLEACCEL)
         #The starting position is randomly generated, as is the speed
         self.rect= self.surf.get_rect(
@@ -88,7 +88,7 @@ class Enemy(pygame.sprite.Sprite):
 class Cloud(pygame.sprite.Sprite):
     def __init__(self):
         super(Cloud, self).__init__()
-        self.surf = pygame.image.load("cloud.png").convert()
+        self.surf = pygame.image.load("assets/cloud.png").convert()
         self.surf.set_colorkey((0,0,0), RLEACCEL)
         #The starting position is randomly generated, as is the speed
         self.rect= self.surf.get_rect(
